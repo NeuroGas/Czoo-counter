@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
-        android:label="Счётчик дней"
-        android:icon="@android:drawable/ic_menu_recent_history"
+        android:label="Jail Time"
+        android:icon="@drawable/ic_app"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
 
         <activity
@@ -17,7 +17,7 @@
 
         <receiver
             android:name=".CounterWidget"
-            android:label="Счётчик дней"
+            android:label="Jail Time"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
