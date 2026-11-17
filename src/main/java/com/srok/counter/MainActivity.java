@@ -140,9 +140,11 @@ public class MainActivity extends Activity {
         musicBtn = button("");
         updateMusicBtn();
         musicBtn.setOnClickListener(x -> toggleMusic());
+        Button support = button("❤️  Поддержать Сапфира");
+        support.setOnClickListener(x -> startActivity(new android.content.Intent(this, SupportActivity.class)));
 
         View[] items = {diamond, title, sub, since, space(20), days, daysLabel, space(12),
-                clock, clockHint, space(20), ymd, space(8), totals, space(28), pick, space(10), musicBtn};
+                clock, clockHint, space(20), ymd, space(8), totals, space(28), support, space(10), pick, space(10), musicBtn};
         for (View v : items) {
             box.addView(v);
             fadeViews.add(v);
@@ -364,6 +366,7 @@ public class MainActivity extends Activity {
         try { if (videoPlayer != null) videoPlayer.start(); } catch (Exception ignored) {}
         if (!firstShow && !revealed) revealContent();
         firstShow = false;
+        UpdateChecker.check(this);
     }
 
     @Override
