@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application' version '8.5.2'
 }
 
+def buildNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as Integer
+
 android {
     namespace 'com.srok.counter'
     compileSdk 34
@@ -10,8 +12,8 @@ android {
         applicationId 'com.srok.counter'
         minSdk 26
         targetSdk 34
-        versionCode 3
-        versionName '1.2'
+        versionCode buildNumber
+        versionName "1.${buildNumber}"
     }
 
     signingConfigs {
