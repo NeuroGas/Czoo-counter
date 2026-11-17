@@ -57,6 +57,7 @@ public class CounterWidget extends AppWidgetProvider {
         if (start < 0) {
             v.setTextViewText(R.id.days, "—");
             v.setTextViewText(R.id.days_label, "");
+            v.setTextViewText(R.id.extra, "");
             v.setChronometer(R.id.clock, SystemClock.elapsedRealtime(), null, false);
             v.setTextViewText(R.id.hint, "Нажмите, чтобы указать дату");
         } else {
@@ -65,6 +66,11 @@ public class CounterWidget extends AppWidgetProvider {
             long rest = diff % CounterWidget.DAY;
             v.setTextViewText(R.id.days, String.valueOf(days));
             v.setTextViewText(R.id.days_label, CounterWidget.plural(days, "день", "дня", "дней"));
+            int years = CounterWidget.ymd(start, now)[0];
+            long weeks = days / 7;
+            v.setTextViewText(R.id.extra,
+                    years + " " + CounterWidget.plural(years, "год", "года", "лет")
+                    + "  ·  " + weeks + " " + CounterWidget.plural(weeks, "неделя", "недели", "недель"));
             v.setChronometer(R.id.clock, SystemClock.elapsedRealtime() - rest, null, true);
             v.setTextViewText(R.id.hint, "часы : минуты : секунды");
             scheduleNextDay(context, start + (days + 1) * CounterWidget.DAY);
