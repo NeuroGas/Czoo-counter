@@ -96,7 +96,13 @@ public class CounterWidget extends AppWidgetProvider {
     private static final String KEY_START = "start";
 
     static long getStart(Context c) {
-        return prefs(c).getLong(KEY_START, -1);
+        long saved = prefs(c).getLong(KEY_START, -1);
+        if (saved >= 0) return saved;
+        // По умолчанию: 14 февраля 2025, 9:00
+        Calendar def = Calendar.getInstance();
+        def.clear();
+        def.set(2025, Calendar.FEBRUARY, 14, 9, 0, 0);
+        return def.getTimeInMillis();
     }
 
     static void setStart(Context c, long millis) {
