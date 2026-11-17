@@ -5,6 +5,7 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -41,16 +42,17 @@ public class MainActivity extends Activity {
         box.setGravity(Gravity.CENTER_HORIZONTAL);
         int pad = dp(24);
         box.setPadding(pad, dp(48), pad, pad);
-        box.setBackgroundColor(Color.parseColor("#0F1115"));
+        
 
-        TextView title = text("УЖЕ ПРОШЛО", 15, "#8B93A3", false);
-        since = text("", 15, "#8B93A3", false);
+        TextView title = text("💎 Sapphire in CZoo", 20, "#FFFFFF", true);
+        TextView sub = text("УЖЕ ПРОШЛО", 14, "#D9FFFFFF", false);
+        since = text("", 15, "#D9FFFFFF", false);
         days = text("—", 96, "#EEF0F4", true);
-        daysLabel = text("", 20, "#8B93A3", false);
-        clock = text("", 48, "#6EA8FE", true);
-        TextView clockHint = text("часы : минуты : секунды", 13, "#8B93A3", false);
+        daysLabel = text("", 20, "#E6FFFFFF", false);
+        clock = text("", 48, "#FFFFFF", true);
+        TextView clockHint = text("часы : минуты : секунды", 13, "#B3FFFFFF", false);
         ymd = text("", 20, "#EEF0F4", false);
-        totals = text("", 15, "#8B93A3", false);
+        totals = text("", 15, "#D9FFFFFF", false);
 
         Button pick = new Button(this);
         pick.setText("Указать дату задержания");
@@ -58,6 +60,7 @@ public class MainActivity extends Activity {
         pick.setOnClickListener(x -> pickDate());
 
         box.addView(title);
+        box.addView(sub);
         box.addView(since);
         box.addView(space(24));
         box.addView(days);
@@ -74,7 +77,9 @@ public class MainActivity extends Activity {
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.parseColor("#0F1115"));
+        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.parseColor("#C8102E"), Color.parseColor("#4A0610"), Color.parseColor("#050505")});
+        scroll.setBackground(bg);
         scroll.addView(box);
         setContentView(scroll);
 
@@ -116,6 +121,8 @@ public class MainActivity extends Activity {
         if (p[0] > 0) sb.append(p[0]).append(' ').append(CounterWidget.plural(p[0], "год", "года", "лет")).append(", ");
         if (p[1] > 0) sb.append(p[1]).append(' ').append(CounterWidget.plural(p[1], "месяц", "месяца", "месяцев")).append(", ");
         sb.append(p[2]).append(' ').append(CounterWidget.plural(p[2], "день", "дня", "дней"));
+        long wk = d / 7;
+        sb.append("\n").append(wk).append(' ').append(CounterWidget.plural(wk, "неделя", "недели", "недель"));
         ymd.setText(sb.toString());
 
         long th = diff / 3600, tm = diff / 60;
