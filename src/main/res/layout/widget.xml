@@ -12,9 +12,10 @@
         android:id="@+id/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Прошло"
-        android:textColor="#8B93A3"
-        android:textSize="13sp" />
+        android:text="💎 Sapphire in CZoo"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -27,8 +28,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="—"
-            android:textColor="#EEF0F4"
-            android:textSize="44sp"
+            android:textColor="#FFFFFF"
+            android:textSize="42sp"
             android:textStyle="bold" />
 
         <TextView
@@ -38,22 +39,32 @@
             android:paddingStart="6dp"
             android:paddingBottom="8dp"
             android:text="дней"
-            android:textColor="#8B93A3"
+            android:textColor="#E6FFFFFF"
             android:textSize="16sp" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/extra"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#E6FFFFFF"
+        android:textSize="14sp" />
 
     <Chronometer
         android:id="@+id/clock"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="#6EA8FE"
-        android:textSize="22sp" />
+        android:layout_marginTop="2dp"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/hint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="часы : минуты : секунды"
-        android:textColor="#8B93A3"
+        android:textColor="#B3FFFFFF"
         android:textSize="11sp" />
 </LinearLayout>
