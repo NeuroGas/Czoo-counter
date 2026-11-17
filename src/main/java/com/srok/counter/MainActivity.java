@@ -1,34 +1,69 @@
 package com.srok.counter;
 
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.SharedPreferences;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
+import android.graphics.PorterDuff;
+import android.graphics.Shader;
+import android.graphics.SurfaceTexture;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.Surface;
+import android.view.TextureView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 public class MainActivity extends Activity {
 
+    private static final long WELCOME_MS = 5000;
+
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final List<View> fadeViews = new ArrayList<>();
+    private final Random rnd = new Random();
+
     private TextView since, days, daysLabel, clock, ymd, totals;
+    private Button musicBtn;
+    private TextureView videoView;
+    private MediaPlayer videoPlayer, musicPlayer;
+    private int vidW, vidH;
+    private boolean countingUp = false;
+    private boolean musicOn = true;
+    private boolean firstShow = true;
 
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
-            render();
+            render(true);
             handler.postDelayed(this, 1000 - (System.currentTimeMillis() % 1000));
         }
     };
@@ -36,74 +71,324 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        musicOn = prefs().getBoolean("music_on", true);
 
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(Color.BLACK);
+
+        // 1. Video background
+        videoView = new TextureView(this);
+        videoView.setSurfaceTextureListener(videoListener);
+        root.addView(videoView, match());
+
+        // 2. Breathing red light
+        View glow = new View(this);
+        glow.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.parseColor("#B3C8102E"), Color.parseColor("#664A0610"), Color.parseColor("#33000000")}));
+        root.addView(glow, match());
+        ObjectAnimator breath = ObjectAnimator.ofFloat(glow, View.ALPHA, 0.35f, 0.85f);
+        breath.setDuration(3500);
+        breath.setRepeatMode(ValueAnimator.REVERSE);
+        breath.setRepeatCount(ValueAnimator.INFINITE);
+        breath.start();
+
+        // 3. Content
+        root.addView(buildContent(), match());
+
+        // 4. WELCOME TO HELL
+        root.addView(buildWelcome(), match());
+
+        setContentView(root);
+    }
+
+    private View buildContent() {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setGravity(Gravity.CENTER_HORIZONTAL);
         int pad = dp(24);
-        box.setPadding(pad, dp(48), pad, pad);
-        
+        box.setPadding(pad, dp(36), pad, pad);
 
-        TextView title = text("💎 Sapphire in CZoo", 20, "#FFFFFF", true);
-        TextView sub = text("УЖЕ ПРОШЛО", 14, "#D9FFFFFF", false);
+        ImageView diamond = new ImageView(this);
+        diamond.setImageResource(R.drawable.diamond);
+        diamond.setColorFilter(Color.parseColor("#E8102E"), PorterDuff.Mode.SRC_IN);
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(90), dp(90));
+        dlp.gravity = Gravity.CENTER_HORIZONTAL;
+        diamond.setLayoutParams(dlp);
+        ObjectAnimator spin = ObjectAnimator.ofFloat(diamond, View.ROTATION_Y, 0f, 360f);
+        spin.setDuration(8000);
+        spin.setInterpolator(new LinearInterpolator());
+        spin.setRepeatCount(ValueAnimator.INFINITE);
+        spin.start();
+        ObjectAnimator shimmer = ObjectAnimator.ofFloat(diamond, View.ALPHA, 0.55f, 1f);
+        shimmer.setDuration(1600);
+        shimmer.setRepeatMode(ValueAnimator.REVERSE);
+        shimmer.setRepeatCount(ValueAnimator.INFINITE);
+        shimmer.start();
+
+        TextView title = text("Sapphire in CZoo", 24, "#FFFFFF", true);
+        TextView sub = text("УЖЕ ПРОШЛО", 14, "#E6FFFFFF", false);
         since = text("", 15, "#D9FFFFFF", false);
-        days = text("—", 96, "#EEF0F4", true);
+        days = text("—", 96, "#FFFFFF", true);
         daysLabel = text("", 20, "#E6FFFFFF", false);
         clock = text("", 48, "#FFFFFF", true);
         TextView clockHint = text("часы : минуты : секунды", 13, "#B3FFFFFF", false);
-        ymd = text("", 20, "#EEF0F4", false);
+        ymd = text("", 20, "#FFFFFF", false);
         totals = text("", 15, "#D9FFFFFF", false);
 
-        Button pick = new Button(this);
-        pick.setText("Указать дату задержания");
-        pick.setAllCaps(false);
+        Button pick = button("Указать дату задержания");
         pick.setOnClickListener(x -> pickDate());
+        musicBtn = button("");
+        updateMusicBtn();
+        musicBtn.setOnClickListener(x -> toggleMusic());
 
-        box.addView(title);
-        box.addView(sub);
-        box.addView(since);
-        box.addView(space(24));
-        box.addView(days);
-        box.addView(daysLabel);
-        box.addView(space(16));
-        box.addView(clock);
-        box.addView(clockHint);
-        box.addView(space(24));
-        box.addView(ymd);
-        box.addView(space(8));
-        box.addView(totals);
-        box.addView(space(32));
-        box.addView(pick);
+        View[] items = {diamond, title, sub, since, space(20), days, daysLabel, space(12),
+                clock, clockHint, space(20), ymd, space(8), totals, space(28), pick, space(10), musicBtn};
+        for (View v : items) {
+            box.addView(v);
+            fadeViews.add(v);
+            v.setAlpha(0f);
+        }
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.parseColor("#C8102E"), Color.parseColor("#4A0610"), Color.parseColor("#050505")});
-        scroll.setBackground(bg);
-        scroll.addView(box);
-        setContentView(scroll);
-
-        if (CounterWidget.getStart(this) < 0) pickDate();
+        FrameLayout center = new FrameLayout(this);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        center.addView(box, lp);
+        scroll.addView(center, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        return scroll;
     }
+
+    private View buildWelcome() {
+        final FrameLayout overlay = new FrameLayout(this);
+        overlay.setBackgroundColor(Color.parseColor("#E6000000"));
+        overlay.setClickable(true);
+
+        final TextView hell = new TextView(this);
+        hell.setText("WELCOME\nTO HELL");
+        hell.setGravity(Gravity.CENTER);
+        hell.setTextSize(TypedValue.COMPLEX_UNIT_SP, 72);
+        hell.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
+        hell.setLetterSpacing(0.12f);
+        hell.setLineSpacing(0, 0.9f);
+        hell.setShadowLayer(40, 0, 0, Color.parseColor("#FF2A00"));
+        hell.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (b - t > 0) {
+                hell.getPaint().setShader(new LinearGradient(0, 0, 0, b - t,
+                        new int[]{Color.parseColor("#FFE066"), Color.parseColor("#FF6A00"),
+                                Color.parseColor("#D10000"), Color.parseColor("#5A0000")},
+                        new float[]{0f, 0.35f, 0.7f, 1f}, Shader.TileMode.CLAMP));
+                hell.invalidate();
+            }
+        });
+        overlay.addView(hell, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+
+        // Slam in from huge
+        hell.setScaleX(3f);
+        hell.setScaleY(3f);
+        hell.setAlpha(0f);
+        hell.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(800)
+                .setInterpolator(new OvershootInterpolator(1.4f)).start();
+
+        // Demonic shake + flicker
+        final ValueAnimator shake = ValueAnimator.ofFloat(0f, 1f);
+        shake.setDuration(3400);
+        shake.setStartDelay(800);
+        shake.addUpdateListener(a -> {
+            hell.setTranslationX((rnd.nextFloat() - 0.5f) * dp(6));
+            hell.setTranslationY((rnd.nextFloat() - 0.5f) * dp(6));
+            hell.setAlpha(rnd.nextFloat() < 0.07f ? 0.35f : 1f);
+            float s = 1f + 0.04f * (float) Math.sin(a.getAnimatedFraction() * Math.PI * 8);
+            hell.setScaleX(s);
+            hell.setScaleY(s);
+        });
+        shake.start();
+
+        // Burn out
+        final Runnable hide = () -> {
+            shake.cancel();
+            hell.animate().scaleX(1.4f).scaleY(1.4f).alpha(0f).setDuration(700)
+                    .setInterpolator(new AccelerateInterpolator()).start();
+            overlay.animate().alpha(0f).setDuration(800).withEndAction(() -> {
+                overlay.setVisibility(View.GONE);
+            }).start();
+            revealContent();
+        };
+        handler.postDelayed(hide, WELCOME_MS - 800);
+        overlay.setOnClickListener(v -> {
+            handler.removeCallbacks(hide);
+            hide.run();
+        });
+        return overlay;
+    }
+
+    private boolean revealed = false;
+
+    private void revealContent() {
+        if (revealed) return;
+        revealed = true;
+        for (int i = 0; i < fadeViews.size(); i++) {
+            View v = fadeViews.get(i);
+            v.setTranslationY(dp(24));
+            v.animate().alpha(1f).translationY(0).setStartDelay(i * 60L).setDuration(600)
+                    .setInterpolator(new DecelerateInterpolator()).start();
+        }
+        countUp();
+    }
+
+    private void countUp() {
+        long start = CounterWidget.getStart(this);
+        long target = Math.max(0, System.currentTimeMillis() - start) / CounterWidget.DAY;
+        countingUp = true;
+        ValueAnimator va = ValueAnimator.ofFloat(0f, target);
+        va.setDuration(2200);
+        va.setInterpolator(new DecelerateInterpolator(2f));
+        va.addUpdateListener(a -> {
+            long d = (long) (float) (Float) a.getAnimatedValue();
+            days.setText(String.format(Locale.getDefault(), "%,d", d));
+            daysLabel.setText(CounterWidget.plural(d, "день", "дня", "дней"));
+        });
+        va.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                countingUp = false;
+                render(false);
+            }
+        });
+        va.start();
+    }
+
+    // ---------- video ----------
+
+    private final TextureView.SurfaceTextureListener videoListener = new TextureView.SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture st, int w, int h) {
+            startVideo(st);
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture st, int w, int h) {
+            applyCrop();
+        }
+
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture st) {
+            releaseVideo();
+            return true;
+        }
+
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture st) {}
+    };
+
+    private void startVideo(SurfaceTexture st) {
+        releaseVideo();
+        try {
+            videoPlayer = new MediaPlayer();
+            AssetFileDescriptor afd = getResources().openRawResourceFd(R.raw.bg_video);
+            videoPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+            videoPlayer.setSurface(new Surface(st));
+            videoPlayer.setLooping(true);
+            videoPlayer.setVolume(0f, 0f);
+            videoPlayer.setOnVideoSizeChangedListener((mp, w, h) -> {
+                vidW = w;
+                vidH = h;
+                applyCrop();
+            });
+            videoPlayer.setOnPreparedListener(MediaPlayer::start);
+            videoPlayer.prepareAsync();
+        } catch (Exception e) {
+            releaseVideo();
+        }
+    }
+
+    private void applyCrop() {
+        int vw = videoView.getWidth(), vh = videoView.getHeight();
+        if (vw == 0 || vh == 0 || vidW == 0 || vidH == 0) return;
+        float scale = Math.max((float) vw / vidW, (float) vh / vidH);
+        Matrix m = new Matrix();
+        m.setScale(vidW * scale / vw, vidH * scale / vh, vw / 2f, vh / 2f);
+        videoView.setTransform(m);
+    }
+
+    private void releaseVideo() {
+        if (videoPlayer != null) {
+            try { videoPlayer.release(); } catch (Exception ignored) {}
+            videoPlayer = null;
+        }
+    }
+
+    // ---------- music ----------
+
+    private void startMusic() {
+        if (!musicOn) return;
+        try {
+            if (musicPlayer == null) {
+                musicPlayer = MediaPlayer.create(this, R.raw.music);
+                if (musicPlayer == null) return;
+                musicPlayer.setLooping(true);
+            }
+            musicPlayer.start();
+        } catch (Exception ignored) {}
+    }
+
+    private void pauseMusic() {
+        try { if (musicPlayer != null && musicPlayer.isPlaying()) musicPlayer.pause(); } catch (Exception ignored) {}
+    }
+
+    private void toggleMusic() {
+        musicOn = !musicOn;
+        prefs().edit().putBoolean("music_on", musicOn).apply();
+        if (musicOn) startMusic(); else pauseMusic();
+        updateMusicBtn();
+    }
+
+    private void updateMusicBtn() {
+        musicBtn.setText(musicOn ? "🔊  Музыка: вкл" : "🔇  Музыка: выкл");
+    }
+
+    private SharedPreferences prefs() {
+        return getSharedPreferences("app", MODE_PRIVATE);
+    }
+
+    // ---------- lifecycle ----------
 
     @Override
     protected void onResume() {
         super.onResume();
         handler.post(tick);
+        startMusic();
+        try { if (videoPlayer != null) videoPlayer.start(); } catch (Exception ignored) {}
+        if (!firstShow && !revealed) revealContent();
+        firstShow = false;
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(tick);
+        pauseMusic();
+        try { if (videoPlayer != null && videoPlayer.isPlaying()) videoPlayer.pause(); } catch (Exception ignored) {}
     }
 
-    private void render() {
-        long start = CounterWidget.getStart(this);
-        if (start < 0) {
-            since.setText("Дата ещё не указана");
-            return;
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacksAndMessages(null);
+        releaseVideo();
+        if (musicPlayer != null) {
+            try { musicPlayer.release(); } catch (Exception ignored) {}
+            musicPlayer = null;
         }
+    }
+
+    // ---------- counter ----------
+
+    private void render(boolean pulse) {
+        long start = CounterWidget.getStart(this);
         long now = System.currentTimeMillis();
         long diff = Math.max(0, now - start) / 1000;
         long d = diff / 86400;
@@ -112,14 +397,21 @@ public class MainActivity extends Activity {
         long s = diff % 60;
 
         since.setText("с " + new SimpleDateFormat("d MMMM yyyy, HH:mm", new Locale("ru")).format(start));
-        days.setText(String.format(Locale.getDefault(), "%,d", d));
-        daysLabel.setText(CounterWidget.plural(d, "день", "дня", "дней"));
+        if (!countingUp && revealed) {
+            days.setText(String.format(Locale.getDefault(), "%,d", d));
+            daysLabel.setText(CounterWidget.plural(d, "день", "дня", "дней"));
+        }
         clock.setText(String.format(Locale.US, "%02d:%02d:%02d", h, m, s));
+        if (pulse && revealed) {
+            clock.animate().scaleX(1.08f).scaleY(1.08f).setStartDelay(0).setDuration(120)
+                    .withEndAction(() -> clock.animate().scaleX(1f).scaleY(1f).setDuration(300).start())
+                    .start();
+        }
 
         int[] p = CounterWidget.ymd(start, now);
         StringBuilder sb = new StringBuilder();
         if (p[0] > 0) sb.append(p[0]).append(' ').append(CounterWidget.plural(p[0], "год", "года", "лет")).append(", ");
-        if (p[1] > 0) sb.append(p[1]).append(' ').append(CounterWidget.plural(p[1], "месяц", "месяца", "месяцев")).append(", ");
+        if (p[0] > 0 || p[1] > 0) sb.append(p[1]).append(' ').append(CounterWidget.plural(p[1], "месяц", "месяца", "месяцев")).append(", ");
         sb.append(p[2]).append(' ').append(CounterWidget.plural(p[2], "день", "дня", "дней"));
         long wk = d / 7;
         sb.append("\n").append(wk).append(' ').append(CounterWidget.plural(wk, "неделя", "недели", "недель"));
@@ -135,8 +427,7 @@ public class MainActivity extends Activity {
 
     private void pickDate() {
         final Calendar c = Calendar.getInstance();
-        long start = CounterWidget.getStart(this);
-        if (start >= 0) c.setTimeInMillis(start);
+        c.setTimeInMillis(CounterWidget.getStart(this));
         DatePickerDialog dd = new DatePickerDialog(this, (view, y, mo, day) -> {
             c.set(Calendar.YEAR, y);
             c.set(Calendar.MONTH, mo);
@@ -148,12 +439,14 @@ public class MainActivity extends Activity {
                 c.set(Calendar.MILLISECOND, 0);
                 CounterWidget.setStart(this, c.getTimeInMillis());
                 CounterWidget.updateAll(this);
-                render();
+                render(false);
             }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show();
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
         dd.getDatePicker().setMaxDate(System.currentTimeMillis());
         dd.show();
     }
+
+    // ---------- helpers ----------
 
     private TextView text(String s, int sp, String color, boolean bold) {
         TextView t = new TextView(this);
@@ -161,14 +454,38 @@ public class MainActivity extends Activity {
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
         t.setTextColor(Color.parseColor(color));
         t.setGravity(Gravity.CENTER);
+        t.setShadowLayer(12, 0, 2, Color.BLACK);
         if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
         return t;
     }
 
-    private android.view.View space(int h) {
-        android.view.View v = new android.view.View(this);
+    private Button button(String s) {
+        Button b = new Button(this);
+        b.setText(s);
+        b.setAllCaps(false);
+        b.setTextColor(Color.WHITE);
+        b.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#66000000"));
+        bg.setStroke(dp(1), Color.parseColor("#99FF3B3B"));
+        bg.setCornerRadius(dp(24));
+        b.setBackground(bg);
+        b.setPadding(dp(24), dp(10), dp(24), dp(10));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.gravity = Gravity.CENTER_HORIZONTAL;
+        b.setLayoutParams(lp);
+        return b;
+    }
+
+    private View space(int h) {
+        View v = new View(this);
         v.setLayoutParams(new LinearLayout.LayoutParams(1, dp(h)));
         return v;
+    }
+
+    private FrameLayout.LayoutParams match() {
+        return new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
     }
 
     private int dp(int v) {
