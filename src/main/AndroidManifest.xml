@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="Jail Time"
         android:icon="@drawable/ic_app"
@@ -14,6 +16,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".SupportActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <receiver
             android:name=".CounterWidget"
