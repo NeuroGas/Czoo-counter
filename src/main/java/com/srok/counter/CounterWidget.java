@@ -8,7 +8,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.SystemClock;
 import android.widget.RemoteViews;
 
 import java.util.Calendar;
@@ -58,21 +57,20 @@ public class CounterWidget extends AppWidgetProvider {
             v.setTextViewText(R.id.days, "—");
             v.setTextViewText(R.id.days_label, "");
             v.setTextViewText(R.id.extra, "");
-            v.setChronometer(R.id.clock, SystemClock.elapsedRealtime(), null, false);
             v.setTextViewText(R.id.hint, "Нажмите, чтобы указать дату");
         } else {
             long diff = Math.max(0, now - start);
             long days = diff / CounterWidget.DAY;
-            long rest = diff % CounterWidget.DAY;
             v.setTextViewText(R.id.days, String.valueOf(days));
             v.setTextViewText(R.id.days_label, CounterWidget.plural(days, "день", "дня", "дней"));
-            int years = CounterWidget.ymd(start, now)[0];
+            int[] p = CounterWidget.ymd(start, now);
+            StringBuilder sb = new StringBuilder();
+            if (p[0] > 0) sb.append(p[0]).append(' ').append(CounterWidget.plural(p[0], "год", "года", "лет")).append(' ');
+            if (p[0] > 0 || p[1] > 0) sb.append(p[1]).append(' ').append(CounterWidget.plural(p[1], "месяц", "месяца", "месяцев")).append(' ');
+            sb.append(p[2]).append(' ').append(CounterWidget.plural(p[2], "день", "дня", "дней"));
+            v.setTextViewText(R.id.extra, sb.toString());
             long weeks = days / 7;
-            v.setTextViewText(R.id.extra,
-                    years + " " + CounterWidget.plural(years, "год", "года", "лет")
-                    + "  ·  " + weeks + " " + CounterWidget.plural(weeks, "неделя", "недели", "недель"));
-            v.setChronometer(R.id.clock, SystemClock.elapsedRealtime() - rest, null, true);
-            v.setTextViewText(R.id.hint, "часы : минуты : секунды");
+            v.setTextViewText(R.id.hint, weeks + " " + CounterWidget.plural(weeks, "неделя", "недели", "недель"));
             scheduleNextDay(context, start + (days + 1) * CounterWidget.DAY);
         }
 
