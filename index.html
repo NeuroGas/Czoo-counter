@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jail Time</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jail Time">
+<link rel="apple-touch-icon" href="src/main/res/drawable-nodpi/ic_jail.png">
+<link rel="icon" href="src/main/res/drawable-nodpi/ic_jail.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root { --red:#e8102e; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; background:#000; color:#fff; overflow:hidden;
+    font-family:-apple-system,system-ui,Roboto,"Segoe UI",sans-serif; }
+  #bg { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+  #glow { position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:linear-gradient(135deg,rgba(200,16,46,.7),rgba(74,6,16,.4) 50%,rgba(0,0,0,.2));
+    animation:breath 7s ease-in-out infinite alternate; }
+  @keyframes breath { from{opacity:.35} to{opacity:.85} }
+  #words { position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden; }
+  .word { position:absolute; left:50%; top:50%; white-space:nowrap; font-family:Cinzel,Georgia,serif;
+    font-weight:700; font-size:34px; letter-spacing:.15em; text-shadow:0 0 18px #c8102e; opacity:0; will-change:transform,opacity; }
+  .word.code { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:22px; letter-spacing:.05em; }
+
+  #app { position:fixed; inset:0; z-index:3; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    padding:calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom)); }
+  #app > * { opacity:0; transform:translateY(24px); }
+  #app.show > * { animation:rise .6s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes rise { to{opacity:1; transform:none} }
+  .t { text-shadow:0 2px 12px #000; }
+  #diamond { width:90px; height:90px; animation:spin 8s linear infinite, shimmer 1.6s ease-in-out infinite alternate; }
+  @keyframes spin { from{transform:rotateY(0)} to{transform:rotateY(360deg)} }
+  @keyframes shimmer { from{opacity:.55} to{opacity:1} }
+  .title { font-size:26px; font-weight:800; margin-top:6px; }
+  .sub { font-size:14px; letter-spacing:.2em; opacity:.9; margin-top:4px; }
+  .since { font-size:15px; opacity:.85; margin-top:4px; }
+  .days { font-size:clamp(76px,22vw,120px); font-weight:800; line-height:1; margin-top:20px; font-variant-numeric:tabular-nums; }
+  .dlabel { font-size:20px; opacity:.9; }
+  .clock { font-size:clamp(40px,12vw,56px); font-weight:800; margin-top:14px; font-variant-numeric:tabular-nums; display:inline-block; }
+  .clock.p { animation:pulse .42s ease-out; }
+  @keyframes pulse { 30%{transform:scale(1.08)} 100%{transform:scale(1)} }
+  .hint { font-size:13px; opacity:.7; }
+  .ymd { font-size:20px; margin-top:20px; line-height:1.4; }
+  .totals { font-size:15px; opacity:.85; margin-top:8px; line-height:1.5; font-variant-numeric:tabular-nums; }
+  .btn { margin-top:12px; padding:12px 26px; border-radius:26px; border:1px solid rgba(255,59,59,.6);
+    background:rgba(0,0,0,.4); color:#fff; font-size:16px; cursor:pointer; font-family:inherit; }
+  .btn.red { background:linear-gradient(90deg,#e8102e,#8a0a1c); border:0; font-weight:700; }
+  .ver { font-size:12px; opacity:.5; margin-top:18px; }
+
+  /* WELCOME TO HELL */
+  #intro { position:fixed; inset:0; z-index:10; background:rgba(0,0,0,.9); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; cursor:pointer; transition:opacity .8s; }
+  #intro.hide { opacity:0; pointer-events:none; }
+  #hell { font-family:UnifrakturCook,Georgia,serif; font-weight:700; text-align:center; line-height:.95;
+    font-size:clamp(56px,16vw,140px); letter-spacing:.04em;
+    background:linear-gradient(180deg,#ffe066 0%,#ff6a00 35%,#d10000 70%,#5a0000 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 22px #ff2a00);
+    animation:slam .8s cubic-bezier(.3,1.6,.5,1) both, shake .12s linear .8s 28; }
+  #intro.hide #hell { transform:scale(1.4); transition:transform .7s ease-in; animation:none; }
+  @keyframes slam { from{transform:scale(3); opacity:0} to{transform:scale(1); opacity:1} }
+  @keyframes shake { 0%{transform:translate(2px,-1px)} 25%{transform:translate(-2px,2px)} 50%{transform:translate(1px,1px); opacity:.85}
+    75%{transform:translate(-1px,-2px)} 100%{transform:translate(0,0)} }
+  #enter { margin-top:34px; font-size:15px; letter-spacing:.3em; opacity:0; animation:blink 1.4s ease-in-out 1.2s infinite; }
+  @keyframes blink { 0%,100%{opacity:.25} 50%{opacity:.9} }
+
+  /* Support panel */
+  #sup { position:fixed; inset:0; z-index:20; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    background:linear-gradient(135deg,#7a0a1a,#2a0408 50%,#050505); transform:translateY(100%); transition:transform .45s cubic-bezier(.2,.7,.2,1);
+    padding:calc(22px + env(safe-area-inset-top)) 20px calc(30px + env(safe-area-inset-bottom)); }
+  #sup.open { transform:none; }
+  .sbox { max-width:620px; margin:0 auto; }
+  .close { position:sticky; top:0; float:right; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.3);
+    color:#fff; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; }
+  .sbox h2 { font-size:26px; margin:6px 0 6px; text-align:center; }
+  .sbox p.m { opacity:.85; text-align:center; margin:0 0 18px; }
+  .in { width:100%; padding:13px 16px; border-radius:14px; border:1px solid rgba(255,59,59,.5); background:rgba(0,0,0,.4);
+    color:#fff; font-size:16px; font-family:inherit; margin-bottom:10px; }
+  textarea.in { min-height:96px; resize:vertical; }
+  .in::placeholder { color:rgba(255,255,255,.5); }
+  #send { width:100%; margin-top:4px; }
+  .wall h3 { font-size:20px; margin:30px 0 4px; }
+  #wstat { opacity:.7; font-size:14px; }
+  .card { background:rgba(0,0,0,.35); border:1px solid rgba(255,59,59,.4); border-radius:16px; padding:12px 16px; margin-top:10px;
+    animation:fade .4s; }
+  @keyframes fade { from{opacity:0} }
+  .card b { display:block; font-size:16px; } .card .msg { margin-top:4px; white-space:pre-wrap; word-wrap:break-word; }
+  .card .dt { font-size:12px; opacity:.6; margin-top:6px; }
+  #toast { position:fixed; left:50%; bottom:calc(30px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:30;
+    background:rgba(0,0,0,.85); border:1px solid rgba(255,59,59,.6); padding:12px 18px; border-radius:14px; opacity:0; transition:opacity .3s; pointer-events:none; }
+  #toast.on { opacity:1; }
+</style>
+</head>
+<body>
+<video id="bg" src="src/main/res/raw/bg_video.mp4" autoplay muted loop playsinline preload="auto"></video>
+<div id="glow"></div>
+<div id="words"></div>
+
+<main id="app">
+  <svg id="diamond" viewBox="0 0 630 630" aria-hidden="true"><g fill="#e8102e" transform="rotate(30 315 315) translate(25 25) scale(.92)">
+    <polygon points="145,18 262,18 148,135 18,135"/><polygon points="313,45 400,135 222,135"/>
+    <polygon points="362,18 468,18 605,135 478,135"/><polygon points="0,188 118,188 228,520"/>
+    <polygon points="175,188 445,188 312,605"/><polygon points="503,188 625,188 397,525"/></g></svg>
+  <div class="t title">Sapphire in CZoo</div>
+  <div class="t sub">УЖЕ ПРОШЛО</div>
+  <div class="t since" id="since"></div>
+  <div class="t days" id="days">0</div>
+  <div class="t dlabel" id="dlabel">дней</div>
+  <div><span class="t clock" id="clock">00:00:00</span></div>
+  <div class="t hint">часы : минуты : секунды</div>
+  <div class="t ymd" id="ymd"></div>
+  <div class="t totals" id="totals"></div>
+  <div><button class="btn red" id="openSup">❤️&nbsp; Поддержать Сапфира</button></div>
+  <div><button class="btn" id="music">🔊&nbsp; Музыка: вкл</button></div>
+  <div class="ver">Jail Time · веб-версия</div>
+</main>
+
+<div id="intro"><div id="hell">Welcome<br>to Hell</div><div id="enter">НАЖМИ, ЧТОБЫ ВОЙТИ</div></div>
+
+<section id="sup" aria-hidden="true"><div class="sbox">
+  <button class="close" id="closeSup" aria-label="Закрыть">✕</button>
+  <h2>❤️ Поддержать Сапфира</h2>
+  <p class="m">Напишите своё имя и пару тёплых слов. Их увидят все, кто откроет Jail Time.</p>
+  <input class="in" id="nm" maxlength="40" placeholder="Ваше имя" autocomplete="name">
+  <textarea class="in" id="tx" maxlength="500" placeholder="Ваше пожелание"></textarea>
+  <button class="btn red" id="send">Отправить ❤️</button>
+  <div class="wall"><h3>Стена поддержки</h3><div id="wstat">Загрузка…</div><div id="wall"></div></div>
+</div></section>
+<div id="toast"></div>
+
+<audio id="aud" src="src/main/res/raw/music.mp3" loop preload="auto"></audio>
+
+<script>
+(function(){
+  // 14 февраля 2025, 09:00 по Киеву (UTC+2)
+  var START = new Date('2025-02-14T09:00:00+02:00').getTime();
+  var DAY = 86400000;
+  var FORM_POST = 'https://docs.google.com/forms/d/e/1FAIpQLSdHZqE50PTBOQUsKfzK-EeNXrki3KpoZs7LwPjM6uZnEYgGOQ/formResponse';
+  var F_NAME = 'entry.1489676908', F_TEXT = 'entry.1533154854';
+  var WALL_CSV = 'https://docs.google.com/spreadsheets/d/1JepR1MxWIhHWaiara80SKYeYqfMSmYR8dJ2XMpFpTRA/gviz/tq?tqx=out:csv';
+  var WORDS = ['Lost','Cry','Alone','Empty','Evil','Emotional','Way','Close','Die','Pain','Disappointment','Stiffness',
+    'Hatred','Anger','Humiliation','Despondency','Oppression','Decay','Abomination','Greed','Poverty','Arrogance'];
+  var CODES = ['109 111 110 101 121','112 111 119 101 114','112 101 97 99 101','102 114 101 101 100 111 109',
+    '104 97 112 112 105 110 101 115 115','69 109 109 97','79 108 121 97','108 111 118 101'];
+
+  var $ = function(id){ return document.getElementById(id); };
+  function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
+  function plural(n,a,b,c){ n=Math.abs(n)%100; var n1=n%10; if(n>10&&n<20) return c; if(n1>1&&n1<5) return b; if(n1==1) return a; return c; }
+  function fmt(n){ return n.toLocaleString('ru-RU'); }
+  function pad(n){ return (n<10?'0':'')+n; }
+
+  // ---------- counter ----------
+  var counting = true, entered = false;
+  function ymd(from,to){
+    var a=new Date(from), b=new Date(to);
+    var y=b.getFullYear()-a.getFullYear(), m=b.getMonth()-a.getMonth(), d=b.getDate()-a.getDate();
+    var sa=a.getHours()*3600+a.getMinutes()*60+a.getSeconds(), sb=b.getHours()*3600+b.getMinutes()*60+b.getSeconds();
+    if(sb<sa) d--;
+    if(d<0){ m--; d+=new Date(b.getFullYear(), b.getMonth(), 0).getDate(); }
+    if(m<0){ y--; m+=12; }
+    return [y,m,d];
+  }
+  function render(pulse){
+    var now=Date.now(), diff=Math.max(0,Math.floor((now-START)/1000)), d=Math.floor(diff/86400);
+    if(!counting){ $('days').textContent=fmt(d); $('dlabel').textContent=plural(d,'день','дня','дней'); }
+    $('clock').textContent=pad(Math.floor(diff%86400/3600))+':'+pad(Math.floor(diff%3600/60))+':'+pad(diff%60);
+    if(pulse&&entered){ var c=$('clock'); c.classList.remove('p'); void c.offsetWidth; c.classList.add('p'); }
+    var p=ymd(START,now), s=[];
+    if(p[0]) s.push(p[0]+' '+plural(p[0],'год','года','лет'));
+    if(p[0]||p[1]) s.push(p[1]+' '+plural(p[1],'месяц','месяца','месяцев'));
+    s.push(p[2]+' '+plural(p[2],'день','дня','дней'));
+    var w=Math.floor(d/7);
+    $('ymd').innerHTML=s.join(', ')+'<br>'+w+' '+plural(w,'неделя','недели','недель');
+    var th=Math.floor(diff/3600), tm=Math.floor(diff/60);
+    $('totals').innerHTML='Всего: '+fmt(th)+' '+plural(th,'час','часа','часов')+' · '+fmt(tm)+' '+plural(tm,'минута','минуты','минут')+
+      '<br>'+fmt(diff)+' '+plural(diff,'секунда','секунды','секунд');
+  }
+  $('since').textContent='с '+new Date(START).toLocaleString('ru-RU',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  render(false);
+  (function loop(){ render(true); setTimeout(loop, 1000-(Date.now()%1000)); })();
+
+  function countUp(){
+    var target=Math.floor(Math.max(0,Date.now()-START)/DAY), t0=null;
+    function step(ts){ if(!t0) t0=ts; var f=Math.min(1,(ts-t0)/2200), e=1-Math.pow(1-f,3), v=Math.floor(target*e);
+      $('days').textContent=fmt(v); $('dlabel').textContent=plural(v,'день','дня','дней');
+      if(f<1) requestAnimationFrame(step); else { counting=false; render(false); } }
+    requestAnimationFrame(step);
+  }
+
+  // ---------- intro ----------
+  var aud=$('aud'), musicOn = store('jt_music')!=='0';
+  function updMusic(){ $('music').innerHTML = musicOn ? '🔊&nbsp; Музыка: вкл' : '🔇&nbsp; Музыка: выкл'; }
+  updMusic();
+  function playMusic(){ if(musicOn){ var p=aud.play(); if(p&&p.catch) p.catch(function(){}); } }
+  function enter(){
+    if(entered){ playMusic(); return; }
+    entered=true;
+    $('intro').classList.add('hide');
+    var kids=$('app').children; for(var i=0;i<kids.length;i++) kids[i].style.animationDelay=(i*60)+'ms';
+    $('app').classList.add('show');
+    playMusic(); countUp(); startWords();
+    var v=$('bg'); if(v.paused){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); }
+  }
+  $('intro').addEventListener('click', enter);
+  setTimeout(function(){ if(!entered) enter(); }, 5000);
+  // если вошли автоматически без касания — музыка стартует при первом касании
+  document.addEventListener('pointerdown', function first(){ playMusic(); var v=$('bg'); if(v.paused) v.play().catch(function(){}); document.removeEventListener('pointerdown', first); });
+  $('music').addEventListener('click', function(){
+    musicOn=!musicOn; store('jt_music', musicOn?'1':'0'); updMusic(); if(musicOn) playMusic(); else aud.pause();
+  });
+  document.addEventListener('visibilitychange', function(){ if(document.hidden) aud.pause(); else if(entered) playMusic(); });
+
+  // ---------- words from the dark ----------
+  var wordsTimer=null;
+  function spawn(){
+    var el=document.createElement('div'), code=Math.random()<0.25;
+    el.className='word'+(code?' code':'');
+    el.textContent= code ? CODES[Math.floor(Math.random()*CODES.length)] : WORDS[Math.floor(Math.random()*WORDS.length)];
+    el.style.color = Math.random()<1/3 ? '#ff4a4a' : '#fff';
+    $('words').appendChild(el);
+    var ang=Math.random()*Math.PI*2, s0=10+Math.random()*40, s1=160+Math.random()*220;
+    var cx=Math.cos(ang), cy=Math.sin(ang), peak=.18+Math.random()*.14, es=2.2+Math.random()*1.6;
+    var T=function(d,sc){ return 'translate(-50%,-50%) translate('+(cx*d)+'px,'+(cy*d)+'px) scale('+sc+')'; };
+    var a=el.animate([
+      {transform:T(s0,.12), opacity:0},
+      {transform:T(s0+(s1-s0)*.35,.12+(es-.12)*.35), opacity:peak, offset:.35},
+      {transform:T(s1,es), opacity:0}
+    ],{duration:4200+Math.random()*1800, easing:'cubic-bezier(.55,0,1,1)', fill:'forwards'});
+    a.onfinish=function(){ el.remove(); };
+  }
+  function startWords(){ if(wordsTimer) return; (function next(){ spawn(); wordsTimer=setTimeout(next, 1400+Math.random()*1600); })(); }
+
+  // ---------- support ----------
+  function toast(s){ var t=$('toast'); t.textContent=s; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(function(){ t.classList.remove('on'); },2600); }
+  $('openSup').addEventListener('click', function(){ $('sup').classList.add('open'); loadWall(); });
+  $('closeSup').addEventListener('click', function(){ $('sup').classList.remove('open'); });
+
+  function card(name,msg,dt,top){
+    var c=document.createElement('div'); c.className='card';
+    var b=document.createElement('b'); b.textContent=name;
+    var m=document.createElement('div'); m.className='msg'; m.textContent=msg;
+    var d=document.createElement('div'); d.className='dt'; d.textContent=dt;
+    c.appendChild(b); c.appendChild(m); c.appendChild(d);
+    var w=$('wall'); if(top&&w.firstChild) w.insertBefore(c,w.firstChild); else w.appendChild(c);
+  }
+  function parseCsv(s){
+    var rows=[],row=[],f='',q=false;
+    for(var i=0;i<s.length;i++){ var ch=s[i];
+      if(q){ if(ch=='"'){ if(s[i+1]=='"'){ f+='"'; i++; } else q=false; } else f+=ch; }
+      else if(ch=='"') q=true; else if(ch==','){ row.push(f); f=''; }
+      else if(ch=='\n'){ row.push(f); f=''; rows.push(row); row=[]; } else if(ch!='\r') f+=ch; }
+    if(f.length||row.length){ row.push(f); rows.push(row); }
+    return rows;
+  }
+  var wallLoaded=false;
+  function loadWall(){
+    if(wallLoaded) return; wallLoaded=true;
+    fetch(WALL_CSV+'&t='+Math.floor(Date.now()/60000)).then(function(r){ return r.text(); }).then(function(txt){
+      var rows=parseCsv(txt).slice(1).filter(function(r){ return r.length>=3 && r[1].trim() && r[2].trim(); }).reverse();
+      $('wstat').textContent = rows.length ? 'Пожеланий: '+rows.length : 'Пока пусто — будьте первым ❤️';
+      rows.slice(0,150).forEach(function(r){ card(r[1].trim(), r[2].trim(), (r[0]||'').slice(0,10), false); });
+    }).catch(function(){ wallLoaded=false; $('wstat').textContent='Не удалось загрузить стену. Проверьте интернет.'; });
+  }
+  $('send').addEventListener('click', function(){
+    var n=$('nm').value.trim(), t=$('tx').value.trim();
+    if(!n){ toast('Напишите имя'); $('nm').focus(); return; }
+    if(!t){ toast('Напишите пожелание'); $('tx').focus(); return; }
+    var last=+(store('jt_last')||0); if(Date.now()-last<60000){ toast('Подождите минутку перед следующим сообщением'); return; }
+    var btn=$('send'); btn.disabled=true; btn.textContent='Отправляю…';
+    var body=new URLSearchParams(); body.append(F_NAME,n); body.append(F_TEXT,t);
+    fetch(FORM_POST,{method:'POST',mode:'no-cors',body:body}).then(function(){
+      store('jt_last',String(Date.now())); $('tx').value='';
+      card(n,t,'только что',true); toast('Спасибо! Ваше пожелание отправлено ❤️');
+      $('wstat').textContent='У других оно появится через несколько минут.';
+    }).catch(function(){ toast('Не получилось отправить. Проверьте интернет.'); })
+      .then(function(){ btn.disabled=false; btn.textContent='Отправить ❤️'; });
+  });
+})();
+</script>
+</body>
+</html>
