@@ -59,6 +59,70 @@ public class MainActivity extends Activity {
     private boolean countingUp = false;
     private boolean musicOn = true;
     private boolean firstShow = true;
+    private FrameLayout wordsLayer;
+    private boolean wordsRunning = false;
+
+    private static final String[] WORDS = {"Lost", "Cry", "Alone", "Empty", "Evil", "Emotional", "Way", "Close", "Die"};
+
+    /** Что нового — меняйте этот текст при каждом обновлении. */
+    private static final String WHATS_NEW =
+            "• Слова из темноты на фоне\n"
+            + "• Фраза дня под счётчиком\n"
+            + "• Номер версии внизу экрана\n"
+            + "• Это окно «Что нового»";
+
+    private static final String[] QUOTES = {
+            "Каждый день здесь — ещё один день ближе к дому.",
+            "Стены держат тело, но не мысли.",
+            "Самая тёмная ночь — перед рассветом.",
+            "Сильный не тот, кто не падает, а тот, кто встаёт.",
+            "Время идёт. И ты идёшь вместе с ним — вперёд.",
+            "Терпение — это сила, которую не видно.",
+            "Всё проходит. И это пройдёт.",
+            "Тебя ждут. Помни об этом каждый день.",
+            "Дух не сажают за решётку.",
+            "Счёт идёт на дни, а не на годы.",
+            "Сегодня ты сильнее, чем вчера.",
+            "Шторм не вечен — небо всегда проясняется.",
+            "Не сломаться — уже победа.",
+            "Дорога домой складывается из таких дней, как этот.",
+            "Свобода начинается в голове.",
+            "Каждый рассвет — это шанс начать заново.",
+            "Ты не один. Тебя помнят и любят.",
+            "Огонь закаляет сталь.",
+            "Делай сегодня то, за что завтра скажешь себе спасибо.",
+            "Тишина — лучшее время, чтобы стать сильнее.",
+            "Ошибки не определяют человека. Выбор — определяет.",
+            "Держись. Конец этой дороги ближе, чем кажется.",
+            "Плохие дни тоже заканчиваются в полночь.",
+            "Сила — в спокойствии.",
+            "Кто прошёл через тьму, лучше всех ценит свет.",
+            "Один день за раз.",
+            "Не жди лучшего дня — сделай этот лучше.",
+            "Твоя история ещё пишется.",
+            "Любовь сильнее любых стен.",
+            "Чем труднее путь, тем крепче шаг.",
+            "Время — твой союзник. Каждая секунда работает на тебя.",
+            "Будь камнем, о который разбиваются волны.",
+            "Даже самая длинная дорога состоит из шагов.",
+            "Внутри тебя есть то, что никто не отнимет.",
+            "Боль временна. Гордость за то, что выстоял, — навсегда.",
+            "Ночь не может длиться вечно.",
+            "Терпи, собирайся, становись лучше.",
+            "Сапфир не боится давления — он от него только твёрже.",
+            "Счётчик идёт. А значит, свобода приближается.",
+            "Помни, ради кого ты держишься.",
+            "Каждое утро — победа над вчерашним днём.",
+            "Ты уже прошёл больше, чем думаешь.",
+            "Всё, что не убивает, делает сильнее.",
+            "Звёзды видны только в темноте.",
+            "Спокойствие — оружие сильных.",
+            "Сегодня — ещё одна страница. Переверни её достойно.",
+            "Свет в конце тоннеля — это не поезд. Это выход.",
+            "Держи голову высоко, даже когда трудно.",
+            "Где-то тебя очень ждут.",
+            "Никакая клетка не удержит сердце."
+    };
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -92,7 +156,11 @@ public class MainActivity extends Activity {
         breath.setRepeatCount(ValueAnimator.INFINITE);
         breath.start();
 
-        // 3. Content
+        // 3. Words from the dark
+        wordsLayer = new FrameLayout(this);
+        root.addView(wordsLayer, match());
+
+        // 4. Content
         root.addView(buildContent(), match());
 
         // 4. WELCOME TO HELL
@@ -135,6 +203,12 @@ public class MainActivity extends Activity {
         ymd = text("", 20, "#FFFFFF", false);
         totals = text("", 15, "#D9FFFFFF", false);
 
+        TextView quote = text(QUOTES[(int) ((System.currentTimeMillis() / CounterWidget.DAY) % QUOTES.length)],
+                17, "#FFD9D9", false);
+        quote.setTypeface(Typeface.create(Typeface.SERIF, Typeface.ITALIC));
+        quote.setPadding(dp(12), 0, dp(12), 0);
+        TextView version = text("версия " + versionName(), 12, "#80FFFFFF", false);
+
         Button pick = button("Указать дату задержания");
         pick.setOnClickListener(x -> pickDate());
         musicBtn = button("");
@@ -144,7 +218,7 @@ public class MainActivity extends Activity {
         support.setOnClickListener(x -> startActivity(new android.content.Intent(this, SupportActivity.class)));
 
         View[] items = {diamond, title, sub, since, space(20), days, daysLabel, space(12),
-                clock, clockHint, space(20), ymd, space(8), totals, space(28), support, space(10), pick, space(10), musicBtn};
+                clock, clockHint, space(20), ymd, space(8), totals, space(22), quote, space(26), support, space(10), pick, space(10), musicBtn, space(18), version};
         for (View v : items) {
             box.addView(v);
             fadeViews.add(v);
@@ -238,6 +312,104 @@ public class MainActivity extends Activity {
                     .setInterpolator(new DecelerateInterpolator()).start();
         }
         countUp();
+        startWords();
+        handler.postDelayed(this::showWhatsNew, 1500);
+    }
+
+    // ---------- words from the black hole ----------
+
+    private final Runnable spawnWord = new Runnable() {
+        @Override
+        public void run() {
+            if (!wordsRunning) return;
+            spawnWordOnce();
+            handler.postDelayed(this, 1400 + rnd.nextInt(1600));
+        }
+    };
+
+    private void startWords() {
+        if (wordsRunning || !revealed) return;
+        wordsRunning = true;
+        handler.postDelayed(spawnWord, 600);
+    }
+
+    private void stopWords() {
+        wordsRunning = false;
+        handler.removeCallbacks(spawnWord);
+    }
+
+    private void spawnWordOnce() {
+        final TextView w = new TextView(this);
+        w.setText(WORDS[rnd.nextInt(WORDS.length)]);
+        w.setTextSize(TypedValue.COMPLEX_UNIT_SP, 34);
+        w.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
+        w.setLetterSpacing(0.15f);
+        w.setTextColor(rnd.nextInt(3) == 0 ? Color.parseColor("#FF4A4A") : Color.WHITE);
+        w.setShadowLayer(24, 0, 0, Color.parseColor("#C8102E"));
+        wordsLayer.addView(w, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+
+        final double angle = rnd.nextDouble() * Math.PI * 2;
+        final float startDist = dp(10 + rnd.nextInt(40));
+        final float endDist = dp(160 + rnd.nextInt(220));
+        final float cos = (float) Math.cos(angle), sin = (float) Math.sin(angle);
+        final float peak = 0.18f + rnd.nextFloat() * 0.14f;
+        final float endScale = 2.2f + rnd.nextFloat() * 1.6f;
+
+        ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+        a.setDuration(4200 + rnd.nextInt(1800));
+        a.setInterpolator(new AccelerateInterpolator(1.6f));
+        a.addUpdateListener(v -> {
+            float f = (float) v.getAnimatedValue();
+            float d = startDist + (endDist - startDist) * f;
+            w.setTranslationX(cos * d);
+            w.setTranslationY(sin * d);
+            float sc = 0.12f + (endScale - 0.12f) * f;
+            w.setScaleX(sc);
+            w.setScaleY(sc);
+            float alpha = f < 0.35f ? peak * (f / 0.35f) : peak * (1f - (f - 0.35f) / 0.65f);
+            w.setAlpha(Math.max(0f, alpha));
+        });
+        a.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                wordsLayer.removeView(w);
+            }
+        });
+        a.start();
+    }
+
+    // ---------- what's new ----------
+
+    private void showWhatsNew() {
+        if (isFinishing()) return;
+        long current = versionCode();
+        long seen = prefs().getLong("seen_version", 0);
+        if (seen >= current) return;
+        prefs().edit().putLong("seen_version", current).apply();
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("🔥 Что нового — версия " + versionName())
+                .setMessage(WHATS_NEW)
+                .setPositiveButton("Круто", null)
+                .show();
+    }
+
+    @SuppressWarnings("deprecation")
+    private long versionCode() {
+        try {
+            android.content.pm.PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return android.os.Build.VERSION.SDK_INT >= 28 ? pi.getLongVersionCode() : pi.versionCode;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private String versionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "?";
+        }
     }
 
     private void countUp() {
@@ -366,6 +538,7 @@ public class MainActivity extends Activity {
         try { if (videoPlayer != null) videoPlayer.start(); } catch (Exception ignored) {}
         if (!firstShow && !revealed) revealContent();
         firstShow = false;
+        startWords();
         UpdateChecker.check(this);
     }
 
@@ -373,6 +546,7 @@ public class MainActivity extends Activity {
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(tick);
+        stopWords();
         pauseMusic();
         try { if (videoPlayer != null && videoPlayer.isPlaying()) videoPlayer.pause(); } catch (Exception ignored) {}
     }
