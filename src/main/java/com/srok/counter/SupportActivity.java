@@ -115,6 +115,18 @@ public class SupportActivity extends Activity {
         loadWall();
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Music.screenStarted(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Music.screenStopped();
+    }
+
     // ---------- send ----------
 
     private void submit() {
