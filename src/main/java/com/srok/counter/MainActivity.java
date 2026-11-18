@@ -54,7 +54,7 @@ public class MainActivity extends Activity {
     private TextView since, days, daysLabel, clock, ymd, totals;
     private Button musicBtn;
     private TextureView videoView;
-    private MediaPlayer videoPlayer, musicPlayer;
+    private MediaPlayer videoPlayer;
     private int vidW, vidH;
     private boolean countingUp = false;
     private boolean musicOn = true;
@@ -77,9 +77,8 @@ public class MainActivity extends Activity {
 
     /** Что нового — меняйте этот текст при каждом обновлении. */
     private static final String WHATS_NEW =
-            "• Ещё больше слов из темноты\n"
-            + "• Тайные послания в ASCII-кодах\n"
-            + "• Убрана фраза дня";
+            "• Музыка больше не прерывается\n"
+            + "  на экране «Поддержать»";
 
 
     private final Runnable tick = new Runnable() {
@@ -93,7 +92,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        musicOn = prefs().getBoolean("music_on", true);
+        musicOn = Music.isOn(this);
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
@@ -459,26 +458,9 @@ public class MainActivity extends Activity {
 
     // ---------- music ----------
 
-    private void startMusic() {
-        if (!musicOn) return;
-        try {
-            if (musicPlayer == null) {
-                musicPlayer = MediaPlayer.create(this, R.raw.music);
-                if (musicPlayer == null) return;
-                musicPlayer.setLooping(true);
-            }
-            musicPlayer.start();
-        } catch (Exception ignored) {}
-    }
-
-    private void pauseMusic() {
-        try { if (musicPlayer != null && musicPlayer.isPlaying()) musicPlayer.pause(); } catch (Exception ignored) {}
-    }
-
     private void toggleMusic() {
         musicOn = !musicOn;
-        prefs().edit().putBoolean("music_on", musicOn).apply();
-        if (musicOn) startMusic(); else pauseMusic();
+        Music.setOn(this, musicOn);
         updateMusicBtn();
     }
 
@@ -493,10 +475,21 @@ public class MainActivity extends Activity {
     // ---------- lifecycle ----------
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        Music.screenStarted(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Music.screenStopped();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         handler.post(tick);
-        startMusic();
         try { if (videoPlayer != null) videoPlayer.start(); } catch (Exception ignored) {}
         if (!firstShow && !revealed) revealContent();
         firstShow = false;
@@ -509,7 +502,6 @@ public class MainActivity extends Activity {
         super.onPause();
         handler.removeCallbacks(tick);
         stopWords();
-        pauseMusic();
         try { if (videoPlayer != null && videoPlayer.isPlaying()) videoPlayer.pause(); } catch (Exception ignored) {}
     }
 
@@ -518,10 +510,6 @@ public class MainActivity extends Activity {
         super.onDestroy();
         handler.removeCallbacksAndMessages(null);
         releaseVideo();
-        if (musicPlayer != null) {
-            try { musicPlayer.release(); } catch (Exception ignored) {}
-            musicPlayer = null;
-        }
     }
 
     // ---------- counter ----------
