@@ -62,67 +62,25 @@ public class MainActivity extends Activity {
     private FrameLayout wordsLayer;
     private boolean wordsRunning = false;
 
-    private static final String[] WORDS = {"Lost", "Cry", "Alone", "Empty", "Evil", "Emotional", "Way", "Close", "Die"};
+    private static final String[] WORDS = {
+            "Lost", "Cry", "Alone", "Empty", "Evil", "Emotional", "Way", "Close", "Die",
+            "Pain", "Disappointment", "Stiffness", "Hatred", "Anger", "Humiliation",
+            "Despondency", "Oppression", "Decay", "Abomination", "Greed", "Poverty", "Arrogance"
+    };
+
+    /** Слова в ASCII-кодах. */
+    private static final String[] CODES = {
+            "109 111 110 101 121", "112 111 119 101 114", "112 101 97 99 101",
+            "102 114 101 101 100 111 109", "104 97 112 112 105 110 101 115 115",
+            "69 109 109 97", "79 108 121 97", "108 111 118 101"
+    };
 
     /** Что нового — меняйте этот текст при каждом обновлении. */
     private static final String WHATS_NEW =
-            "• Слова из темноты на фоне\n"
-            + "• Фраза дня под счётчиком\n"
-            + "• Номер версии внизу экрана\n"
-            + "• Это окно «Что нового»";
+            "• Ещё больше слов из темноты\n"
+            + "• Тайные послания в ASCII-кодах\n"
+            + "• Убрана фраза дня";
 
-    private static final String[] QUOTES = {
-            "Каждый день здесь — ещё один день ближе к дому.",
-            "Стены держат тело, но не мысли.",
-            "Самая тёмная ночь — перед рассветом.",
-            "Сильный не тот, кто не падает, а тот, кто встаёт.",
-            "Время идёт. И ты идёшь вместе с ним — вперёд.",
-            "Терпение — это сила, которую не видно.",
-            "Всё проходит. И это пройдёт.",
-            "Тебя ждут. Помни об этом каждый день.",
-            "Дух не сажают за решётку.",
-            "Счёт идёт на дни, а не на годы.",
-            "Сегодня ты сильнее, чем вчера.",
-            "Шторм не вечен — небо всегда проясняется.",
-            "Не сломаться — уже победа.",
-            "Дорога домой складывается из таких дней, как этот.",
-            "Свобода начинается в голове.",
-            "Каждый рассвет — это шанс начать заново.",
-            "Ты не один. Тебя помнят и любят.",
-            "Огонь закаляет сталь.",
-            "Делай сегодня то, за что завтра скажешь себе спасибо.",
-            "Тишина — лучшее время, чтобы стать сильнее.",
-            "Ошибки не определяют человека. Выбор — определяет.",
-            "Держись. Конец этой дороги ближе, чем кажется.",
-            "Плохие дни тоже заканчиваются в полночь.",
-            "Сила — в спокойствии.",
-            "Кто прошёл через тьму, лучше всех ценит свет.",
-            "Один день за раз.",
-            "Не жди лучшего дня — сделай этот лучше.",
-            "Твоя история ещё пишется.",
-            "Любовь сильнее любых стен.",
-            "Чем труднее путь, тем крепче шаг.",
-            "Время — твой союзник. Каждая секунда работает на тебя.",
-            "Будь камнем, о который разбиваются волны.",
-            "Даже самая длинная дорога состоит из шагов.",
-            "Внутри тебя есть то, что никто не отнимет.",
-            "Боль временна. Гордость за то, что выстоял, — навсегда.",
-            "Ночь не может длиться вечно.",
-            "Терпи, собирайся, становись лучше.",
-            "Сапфир не боится давления — он от него только твёрже.",
-            "Счётчик идёт. А значит, свобода приближается.",
-            "Помни, ради кого ты держишься.",
-            "Каждое утро — победа над вчерашним днём.",
-            "Ты уже прошёл больше, чем думаешь.",
-            "Всё, что не убивает, делает сильнее.",
-            "Звёзды видны только в темноте.",
-            "Спокойствие — оружие сильных.",
-            "Сегодня — ещё одна страница. Переверни её достойно.",
-            "Свет в конце тоннеля — это не поезд. Это выход.",
-            "Держи голову высоко, даже когда трудно.",
-            "Где-то тебя очень ждут.",
-            "Никакая клетка не удержит сердце."
-    };
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -203,10 +161,6 @@ public class MainActivity extends Activity {
         ymd = text("", 20, "#FFFFFF", false);
         totals = text("", 15, "#D9FFFFFF", false);
 
-        TextView quote = text(QUOTES[(int) ((System.currentTimeMillis() / CounterWidget.DAY) % QUOTES.length)],
-                17, "#FFD9D9", false);
-        quote.setTypeface(Typeface.create(Typeface.SERIF, Typeface.ITALIC));
-        quote.setPadding(dp(12), 0, dp(12), 0);
         TextView version = text("версия " + versionName(), 12, "#80FFFFFF", false);
 
         Button pick = button("Указать дату задержания");
@@ -218,7 +172,7 @@ public class MainActivity extends Activity {
         support.setOnClickListener(x -> startActivity(new android.content.Intent(this, SupportActivity.class)));
 
         View[] items = {diamond, title, sub, since, space(20), days, daysLabel, space(12),
-                clock, clockHint, space(20), ymd, space(8), totals, space(22), quote, space(26), support, space(10), pick, space(10), musicBtn, space(18), version};
+                clock, clockHint, space(20), ymd, space(8), totals, space(28), support, space(10), pick, space(10), musicBtn, space(18), version};
         for (View v : items) {
             box.addView(v);
             fadeViews.add(v);
@@ -340,10 +294,18 @@ public class MainActivity extends Activity {
 
     private void spawnWordOnce() {
         final TextView w = new TextView(this);
-        w.setText(WORDS[rnd.nextInt(WORDS.length)]);
-        w.setTextSize(TypedValue.COMPLEX_UNIT_SP, 34);
-        w.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
-        w.setLetterSpacing(0.15f);
+        boolean code = rnd.nextInt(4) == 0;              // ~1 из 4 — ASCII-код
+        if (code) {
+            w.setText(CODES[rnd.nextInt(CODES.length)]);
+            w.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+            w.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.BOLD));
+            w.setLetterSpacing(0.05f);
+        } else {
+            w.setText(WORDS[rnd.nextInt(WORDS.length)]);
+            w.setTextSize(TypedValue.COMPLEX_UNIT_SP, 34);
+            w.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
+            w.setLetterSpacing(0.15f);
+        }
         w.setTextColor(rnd.nextInt(3) == 0 ? Color.parseColor("#FF4A4A") : Color.WHITE);
         w.setShadowLayer(24, 0, 0, Color.parseColor("#C8102E"));
         wordsLayer.addView(w, new FrameLayout.LayoutParams(
